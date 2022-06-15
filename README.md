@@ -15,6 +15,6 @@ Ounces: Ounces of beer
 
 ### Brewery Data
 Brew_ID: Unique identifier of the brewery  
-Name: Name of the brewery. 
+Name: Name of the brewery.  
 City: City where the brewery is located  
 State: U.S. State where the brewery is located  
