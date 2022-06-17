@@ -3,7 +3,7 @@
 This project aims to gain insight on breweries across the US and the types of beer they make.
 We will look at the alcohol by volume and bitterness for different types of beer.
 
-## Data Code Book
+## Data
 ### Beer Data
 Name: Name of the beer  
 Beer_ID: Unique identifier of the beer  
