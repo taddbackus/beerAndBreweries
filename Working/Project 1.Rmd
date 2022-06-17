@@ -1,0 +1,893 @@
+---
+title: 'Case Study 1'
+author: 'Austin Webb'
+date: '2022-06-12'
+output: html_document
+---
+
+# Read in the packages needed
+```{r}
+library(dplyr) # yes
+library(tidyr) # yes
+library(caret) # yes
+library(ggplot2) # yes
+
+# library(plotly)
+# library(stringi)
+# library(rvest) # html_table, html_node
+# library(RCurl) # getURL
+# library(tm) # text mining library provides the stopwords() function
+# library(plyr)
+# library(jsonlite)
+# library(tidyverse)
+# library(class)
+# library(e1071)
+# library(fastDummies)
+# library(cluster)
+```
+
+# Data import
+```{r}
+# Read in the beer data
+beer <- read.csv(file.choose(), header = TRUE)
+head(beer)
+summary(beer)
+
+# Read in the brewery data
+brewery <- read.csv(file.choose(), header = TRUE)
+head(brewery)
+summary(brewery)
+```
+
+
+# Question 1
+## How many breweries are present in each state?
+```{r}
+# This visually looks cleaner
+table(brewery$State)
+state_count <- data.frame(table(brewery$State))
+
+# Same info different style
+brewery %>% count(State)
+
+
+
+```
+
+
+# Question 2
+## Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.  (RMD only, this does not need to be included in the presentation or the deck.)
+```{r}
+# Merge the two dataframes
+beer_brewery_merged <- merge(beer, brewery, by.x='Brewery_id', by.y = 'Brew_ID')
+
+# Print the first six observations
+head(beer_brewery_merged, 6)
+
+# Print the last six observations
+tail(beer_brewery_merged, 6)
+
+```
+
+
+# Question 3
+## Address the missing values in each column.
+```{r}
+# Overview of what we are looking at
+summary(beer_brewery_merged)
+# we see that we have missing values in ABV (62) and IBU (1005)
+
+# Check to see if this adds up
+sum(is.na(beer_brewery_merged))
+
+# Nice check to see missing values in each column
+sapply(beer_brewery_merged, function(x) sum(is.na(x)))
+
+# Make copy of dataframe
+beer_brewery_merged_mean <- beer_brewery_merged
+
+# Replace nan in ABV column with mean
+beer_brewery_merged_mean$ABV[is.na(beer_brewery_merged_mean$ABV)] <- mean(beer_brewery_merged_mean$ABV, na.rm = TRUE)
+# Replace nan in IBU column with mean
+beer_brewery_merged_mean$IBU[is.na(beer_brewery_merged_mean$IBU)] <- mean(beer_brewery_merged_mean$IBU, na.rm = TRUE)
+
+# Check to see if the nans are gone
+summary(beer_brewery_merged_mean)
+
+# Double check to see if we missed anything
+sum(is.na(beer_brewery_merged_mean))
+
+# Nice check to see missing values in each column
+sapply(beer_brewery_merged_mean, function(x) sum(is.na(x)))
+
+
+
+# Drop the observations where there is a nan in ABV or IBU
+beer_brewery_merged_dropped_nan <- filter(beer_brewery_merged, !is.na(ABV))
+beer_brewery_merged_dropped_nan <- filter(beer_brewery_merged_dropped_nan, !is.na(IBU))
+
+
+# Check to see if the nans are gone
+summary(beer_brewery_merged_dropped_nan)
+
+# Double check to see if we missed anything
+sum(is.na(beer_brewery_merged_dropped_nan))
+
+# Nice check to see missing values in each column
+sapply(beer_brewery_merged_dropped_nan, function(x) sum(is.na(x)))
+
+
+```
+
+
+# Question 4
+## Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
+### Use the mean for nan dataset
+```{r}
+# Find mean, min, max, median, and standard deviation ABV for each state 
+beer_brewery_merged_mean %>%
+  group_by(State) %>% 
+  summarise(Mean = mean(ABV), 
+            Min = min(ABV), 
+            Max = max(ABV),
+            Median = median(ABV), 
+            Std = sd(ABV))
+
+# Find mean, min, max, median, and standard deviation IBU for each state 
+beer_brewery_merged_mean %>%
+  group_by(State) %>% 
+  summarise(Mean = mean(IBU), 
+            Min = min(IBU), 
+            Max = max(IBU),
+            Median = median(IBU), 
+            Std = sd(IBU))
+
+# Just find the median of ABV for each state
+ABV_Medians_mean <- beer_brewery_merged_mean %>%
+  group_by(State) %>% 
+  summarise(Median = median(ABV))
+
+# Just find the median of IBU for each state
+IBU_Medians_mean <- beer_brewery_merged_mean %>%
+  group_by(State) %>% 
+  summarise(Median = median(IBU))
+
+
+
+```
+
+```{r}
+# Plot the ABV medians by state
+abv_plot_mean <- ggplot(ABV_Medians, 
+                   aes(x = State, 
+                       y = Median, 
+                       fill = State)) +
+  geom_bar(width = 0.4, 
+           position = position_dodge(width = 0.05), 
+           stat = 'identity') +
+  #coord_flip()  +
+  ggtitle('Median ABV by State') +
+  geom_hline(yintercept = mean(ABV_Medians$Median))
+
+# Add labels
+abv_plot_mean + labs(title = 'Median ABV by State', 
+                x = 'State', 
+                y = 'Median')
+abv_plot_mean + theme(axis.text = element_text(size = 8))
+
+abv_plot_mean + theme(axis.text.x = element_text(angle = 90, 
+                                            hjust = .25, 
+                                            vjust = .25,
+                                            size = 6))
+```
+
+
+
+
+
+```{r}
+
+# plot the IBU medians by state
+ibu_plot <- ggplot(IBU_Medians, 
+                   aes(x = State, 
+                       y = Median, 
+                       fill = State)) +
+  geom_bar(width = 0.4, 
+           position = position_dodge(width = 0.05),
+           stat = 'identity') +
+ # coord_flip() +
+  ggtitle('Median IBU by State') +
+  geom_hline(yintercept = mean(IBU_Medians$Median))
+
+# Add labels
+ibu_plot + labs(title = 'Median IBU by State', 
+                x = 'State', 
+                y = 'Median')
+ibu_plot + theme(axis.text = element_text(size = 8)) 
+
+ibu_plot + theme(axis.text.x = element_text(angle = 90, 
+                                            hjust = .25, 
+                                            vjust = .25,
+                                            size = 6))
+
+
+```
+
+
+
+```{r}
+
+# Merge the medians to create one df with state medians for ABV and IBU 
+
+ABV_IBU_merged <- merge(ABV_Medians, 
+                        IBU_Medians, 
+                        by = 'State')
+# Rename the columns
+ABV_IBU_merged <- rename(ABV_IBU_merged, 
+                         'ABV Medians' = 'Median.x')
+ABV_IBU_merged <- rename(ABV_IBU_merged, 
+                         'IBU Medians' = 'Median.y')
+
+# Pivot the data to make it easier to plot
+to_plot_2 <- pivot_longer(ABV_IBU_merged, 
+                          cols = c('ABV Medians', 
+                                   'IBU Medians'), 
+                          names_to = 'Acronym', 
+                          values_to = 'Medians')
+
+# Plot the data
+combined_plot <- ggplot(to_plot_2, 
+                        aes(x = State, 
+                            y = Medians, 
+                            fill = Acronym)) +
+  geom_bar(position='dodge', 
+           stat='identity')
+# Change the orientation of the text on the x axis
+combined_plot + theme(axis.text.x = element_text(angle = 90, 
+                                                 vjust = 0.5, 
+                                                 hjust = 1))
+```
+
+### Use the dropped for nan dataset
+```{r}
+# Find mean, min, max, median, and standard deviation ABV for each state 
+beer_brewery_merged_dropped_nan %>%
+  group_by(State) %>% 
+  summarise(Mean = mean(ABV), 
+            Min = min(ABV), 
+            Max = max(ABV),
+            Median = median(ABV), 
+            Std = sd(ABV))
+
+# Find mean, min, max, median, and standard deviation IBU for each state 
+beer_brewery_merged_dropped_nan %>%
+  group_by(State) %>% 
+  summarise(Mean = mean(IBU), 
+            Min = min(IBU), 
+            Max = max(IBU),
+            Median = median(IBU), 
+            Std = sd(IBU))
+
+# Just find the median of ABV for each state
+ABV_Medians_dropped <- beer_brewery_merged_dropped_nan %>%
+  group_by(State) %>% 
+  summarise(Median = median(ABV))
+
+# Just find the median of IBU for each state
+IBU_Medians_dropped <- beer_brewery_merged_dropped_nan %>%
+  group_by(State) %>% 
+  summarise(Median = median(IBU))
+
+
+
+```
+
+#### Maybe sort the data??? -> when coparing the two plots its easier to see if the axes are the same
+```{r}
+# Plot the ABV medians by state
+abv_plot_dropped <- ggplot(ABV_Medians_dropped, 
+                   aes(x = State, 
+                       y = Median, 
+                       fill = State)) +
+  geom_bar(width = 0.4, 
+           position = position_dodge(width = 0.05), 
+           stat = 'identity') +
+  #coord_flip()  +
+  ggtitle('Median ABV by State') +
+  geom_hline(yintercept = mean(ABV_Medians_dropped$Median))
+
+# Add labels
+abv_plot_dropped + labs(title = 'Median ABV by State', 
+                x = 'State', 
+                y = 'Median')
+abv_plot_dropped + theme(axis.text = element_text(size = 8))
+
+abv_plot_dropped + theme(axis.text.x = element_text(angle = 90, 
+                                            hjust = .25, 
+                                            vjust = .25,
+                                            size = 6))
+```
+
+
+```{r}
+
+# plot the IBU medians by state
+ibu_plot_dropped <- ggplot(IBU_Medians_dropped, 
+                   aes(x = State, 
+                       y = Median, 
+                       fill = State)) +
+  geom_bar(width = 0.4, 
+           position = position_dodge(width = 0.05),
+           stat = 'identity') +
+ # coord_flip() +
+  ggtitle('Median IBU by State') +
+  geom_hline(yintercept = mean(IBU_Medians$Median))
+
+# Add labels
+ibu_plot_dropped + labs(title = 'Median IBU by State', 
+                x = 'State', 
+                y = 'Median')
+ibu_plot_dropped + theme(axis.text = element_text(size = 8)) 
+
+ibu_plot_dropped + theme(axis.text.x = element_text(angle = 90, 
+                                            hjust = .25, 
+                                            vjust = .25,
+                                            size = 6))
+
+
+```
+
+
+
+
+
+
+
+
+
+# Question 5
+## Which state has the maximum alcoholic (ABV) beer? Which state has the most bitter (IBU) beer?
+### Use the mean for nan dataset
+```{r}
+
+# ABV
+max(beer_brewery_merged_mean$ABV)
+# This shows the max ABV is 0.128
+max_abv_location_mean <- which.max(beer_brewery_merged_mean$ABV)
+# This shows that the max ABV is found in index 375
+beer_brewery_merged_mean %>% slice(max_abv_location_mean)
+# This shows that the max ABV is in Boulder, Colorado
+
+# IBU
+max(beer_brewery_merged_mean$IBU)
+# This shows the max ABV is 138
+max_ibu_location_mean <- which.max(beer_brewery_merged_mean$IBU)
+# This shows that the max ABV is found in index 1857
+beer_brewery_merged_mean %>% slice(max_ibu_location_mean)
+# This shows that the max ABV is in Astoria, Oregon
+
+
+```
+
+### Use the dropped for nan dataset
+```{r}
+
+# ABV
+max(beer_brewery_merged_dropped_nan$ABV)
+# This shows the max ABV is 0.125
+max_abv_location_dropped <- which.max(beer_brewery_merged_dropped_nan$ABV)
+# This shows that the max ABV is found in index 8
+beer_brewery_merged_dropped_nan %>% slice(max_abv_location_dropped)
+# This shows that the max ABV is in Louisville, KY
+
+# IBU
+max(beer_brewery_merged_dropped_nan$IBU)
+# This shows the max ABV is 138
+max_ibu_location_dropped <- which.max(beer_brewery_merged_dropped_nan$IBU)
+# This shows that the max ABV is found in index 1134
+beer_brewery_merged_dropped_nan %>% slice(max_ibu_location_dropped)
+# This shows that the max ABV is in Astoria, Oregon
+
+
+```
+
+
+# Question 6
+## Comment on the summary statistics and distribution of the ABV variable.
+### Use the mean for nan dataset
+```{r}
+
+# Summary stats
+summary(beer_brewery_merged_mean$ABV)
+
+# We see the minimum is 0.001
+# Max is 0.128
+# Mean is 0.05977
+# Median is 0.057
+# First quarter is 0.05 
+# Third quarter is 0.067
+
+```
+```{r}
+
+# Histogram of ABV distribution
+histogram(beer_brewery_merged_mean$ABV)
+
+# Better histogram of ABV distribution
+ABV_distribution_hist_mean <- ggplot(beer_brewery_merged_mean, aes(x = ABV)) +
+  geom_histogram(fill = 'red', color = 'blue')
+
+ABV_distribution_hist_mean
+# We see that there is a decently normal distribution centered around 0.05
+# There might be a tad bit of right skewness, but overall looks normal.
+
+
+ABV_distribution_box_mean <- ggplot(beer_brewery_merged_mean, aes(x = ABV)) +
+  geom_boxplot(fill = 'red', color = 'blue')
+
+ABV_distribution_box_mean
+# This box plot shows a few outliers on the right, which might 
+# suggest a bit of a right skewness.
+
+```
+
+### Use the dropped for nan dataset
+```{r}
+
+# Summary stats
+summary(beer_brewery_merged_dropped_nan$ABV)
+
+# We see the minimum is 0.027
+# Max is 0.125
+# Mean is 0.05991
+# Median is 0.057
+# First quarter is 0.05 
+# Third quarter is 0.068
+
+```
+
+```{r}
+
+# Histogram of ABV distribution
+histogram(beer_brewery_merged_dropped_nan$ABV)
+
+# Better histogram of ABV distribution
+ABV_distribution_hist_dropped <- ggplot(beer_brewery_merged_dropped_nan, aes(x = ABV)) +
+  geom_histogram(fill = 'red', color = 'blue') +
+  ggtitle('ABV Distribution')
+
+ABV_distribution_hist_dropped
+# We see that there is a decently normal distribution centered around 0.05
+# There might be a tad bit of right skewness, but overall looks normal.
+
+
+ABV_distribution_box_dropped <- ggplot(beer_brewery_merged_dropped_nan, aes(x = ABV)) +
+  geom_boxplot(fill = 'red', color = 'blue') +
+  ggtitle('ABV Distribution')
+
+ABV_distribution_box_dropped
+# This box plot shows a few outliers on the right, which might 
+# suggest a bit of a right skewness.
+
+```
+
+
+
+# Question 7
+## Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
+### Use the mean for nan dataset
+```{r}
+
+# Draw a scatterplot to show the relationship between ABV and IBU
+ggplot(beer_brewery_merged_mean, 
+       aes(x = ABV, 
+           y = IBU)) + 
+  geom_point(shape = 18, 
+             color = 'red') +
+  geom_smooth(method = lm, 
+              color = 'blue', 
+              fill = 'blue')
+# We see a moderate positive correlation between ABV and IBU. This shown 
+# by the blue line increasing from left to right and bottom to top at a 
+# moderate angle.
+
+# Find the correlation coefficient 
+cor(beer_brewery_merged_mean$ABV, beer_brewery_merged_mean$IBU)
+# The correlation coefficient is 0.5200. This is an average positive correlation. 
+# This suggests that ABV and IBU moderately influence the other. As one increases,
+# the other also increases. 
+
+
+
+```
+
+### Use the dropped for nan dataset
+```{r}
+
+# Draw a scatterplot to show the relationship between ABV and IBU
+ggplot(beer_brewery_merged_dropped_nan, 
+       aes(x = ABV, 
+           y = IBU)) + 
+  geom_point(shape = 18, 
+             color = 'red') +
+  geom_smooth(method = lm, 
+              color = 'blue', 
+              fill = 'blue') +
+  ggtitle('ABV vs. IBU')
+# We see a moderate positive correlation between ABV and IBU. This shown 
+# by the blue line increasing from left to right and bottom to top at a 
+# moderate angle.
+
+# Find the correlation coefficient 
+cor(beer_brewery_merged_dropped_nan$ABV, beer_brewery_merged_dropped_nan$IBU)
+# The correlation coefficient is 0.6706. This is an average positive correlation. 
+# This suggests that ABV and IBU moderately influence the other. As one increases,
+# the other also increases. 
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Test Stuff
+
+```{r}
+
+# create a function that takes abbreviation and finds state name
+abbr2state <- function(abbr){
+  ab    <- tolower(c('AL', 'AK', 'AZ', 'KS', 'UT', 
+                     'CO', 'CT', 'DE', 'FL', 'GA', 
+                     'HI', 'ID', 'IL', 'IN', 'IA', 
+                     'AR', 'KY', 'LA', 'ME', 'MD', 
+                     'MA', 'MI', 'MN', 'MS', 'MO',
+                     'MT', 'NE', 'NV', 'NH', 'NJ', 
+                     'NM', 'NY', 'NC', 'ND', 'OH', 
+                     'OK', 'OR', 'PA', 'RI', 'SC', 
+                     'SD', 'TN', 'TX', 'CA', 'VT', 
+                     'VA', 'WA', 'WV', 'WI', 'WY', 
+                     'DC'))
+  
+  st    <- c('alabama', 'alaska', 'arizona', 'kansas',
+             'utah', 'colorado', 'connecticut', 'delaware', 
+             'florida', 'georgia', 'hawaii', 'idaho', 
+             'illinois', 'indiana', 'iowa', 'arkansas',
+             'kentucky', 'louisiana', 'maine',
+             'maryland', 'massachusetts', 'michigan',
+             'minnesota', 'mississippi', 'missouri',
+             'montana', 'nebraska', 'nevada',
+             'new Hampshire', 'new jersey', 'new mexico',
+             'new York', 'north carolina', 'north dakota',
+             'ohio', 'oklahoma', 'oregon', 'pennsylvania', 
+             'rhode island', 'south carolina',
+             'south Dakota', 'tennessee', 'texas',
+             'california', 'vermont', 'virginia',
+             'washington', 'west virginia', 'wisconsin',
+             'wyoming', 'district of columbia')
+  
+  st[match(tolower(abbr), ab)]
+}
+
+```
+
+
+```{r}
+
+# Create a function that takes the abbreviation and returns the fips
+abbr2fps <- function(abbr){
+  ab    <- tolower(c('AL', 'AK', 'AZ', 'KS', 'UT', 
+                     'CO', 'CT', 'DE', 'FL', 'GA',
+                     'HI', 'ID', 'IL', 'IN', 'IA', 
+                     'AR', 'KY', 'LA', 'ME', 'MD', 
+                     'MA', 'MI', 'MN', 'MS', 'MO',
+                     'MT', 'NE', 'NV', 'NH', 'NJ', 
+                     'NM', 'NY', 'NC', 'ND', 'OH', 
+                     'OK', 'OR', 'PA', 'RI', 'SC', 
+                     'SD', 'TN', 'TX', 'CA', 'VT', 
+                     'VA', 'WA', 'WV', 'WI', 'WY', 
+                     'DC'))
+  
+  fps    <- c('01', '02', '04', '20',
+              '49', '08', '09', '10', 
+              '12', '13', '15', '16', 
+              '17', '18', '19', '05',
+              '21', '22', '23', '24', 
+              '25', '26', '27', '28', 
+              '29', '30', '31', '32',
+              '33', '34', '35', '36', 
+              '37', '38', '39', '40', 
+              '41', '42', '44', '45',
+              '46', '47', '48', '06', 
+              '50', '51', '53', '54',
+              '55', '56', '11')
+  
+  fps[match(tolower(abbr), ab)]
+}
+
+```
+
+
+```{r}
+# the abbreviation column had a leading space so we are deleting all extra spaces
+ABV_Medians$State <- trimws(ABV_Medians$State, which = c('left'))
+ABV_Medians$State
+```
+
+
+```{r}
+# use the function to add column with fips
+ABV_Medians$FPS<-abbr2fps(ABV_Medians$State)
+
+ABV_Medians
+```
+
+
+```{r}
+# Use the function to add column with full state name
+ABV_Medians$Full_state<-abbr2state(ABV_Medians$State)
+
+ABV_Medians
+```
+
+```{r}
+# Try to plot on US map
+ states <- map_data('state')
+
+ sim_data_geo <- merge(states, ABV_Medians, by.x='region', by.y = 'Full_state')
+
+ qplot(long, lat, data=sim_data_geo, geom='polygon', fill=Median, group=group)
+
+ qplot(long, lat, data=sim_data_geo, geom='auto', fill=Median, group=group)
+
+
+```
+
+
+
+
+
+
+```{r}
+ABV_Medians_dropped
+ABV_Medians_dropped$State <- trimws(ABV_Medians_dropped$State, which = c('left'))
+ABV_Medians_dropped$State
+lookup = data.frame(abb = state.abb, State = state.name) #makes a data frame with State name and abbreviation. 
+colnames(ABV_Medians_dropped)[1] = "abb" # Change Column Name
+Acu2 = merge(ABV_Medians_dropped,lookup,"abb") # make one dataset with state names and abb
+AcuMapData = count(Acu2,State) #count up the occurrence of each state. 
+#AcuMapData = AcuMapData[-c(5,9,43),] #Shows contrast between other states better
+colnames(AcuMapData)[2] = "Breweries" #change "n" to "Acuspikes"
+AcuMapData$region <- tolower(AcuMapData$State)
+AcuMapData2 = AcuMapData[-1]
+states <- map_data("state")
+map.df <- merge(states,AcuMapData2, by="region", all.x=T)
+map.df <- map.df[order(map.df$order),]
+ggplot(map.df, aes(x=long,y=lat,group=group))+
+  geom_polygon(aes(fill=Breweries))+
+  geom_path()+ 
+  scale_fill_gradientn(colours=rev(heat.colors(10)),na.value="grey90")+ggtitle("Acuspike Systems by State")+
+coord_map()
+
+```
+
+
+
+
+# box plot for all states
+## ABV
+```{r}
+
+# box plots for all states
+beer_brewery_merged_mean %>%
+  group_by(State) %>%
+  mutate(mean_abv = mean(ABV, na.rm = T)) %>%
+ggplot(aes(x = reorder(State, -mean_abv), y = ABV, fill = mean_abv)) + 
+  geom_boxplot() + 
+  labs(x = 'State', y = 'Beer ABV', title = 'ABV percentages by State') + 
+  scale_y_continuous(breaks = seq(0, 12, 4)) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  scale_fill_continuous(low = 'skyblue', high = 'blue', name = 'Mean ABV')
+
+
+
+# box plots for all states
+beer_brewery_merged_dropped_nan %>%
+  group_by(State) %>%
+  mutate(mean_abv = mean(ABV, na.rm = T)) %>%
+ggplot(aes(x = reorder(State, -mean_abv), y = ABV, fill = mean_abv)) + 
+  geom_boxplot() + 
+  labs(x = 'State', y = 'Beer ABV', title = 'ABV percentages by State') + 
+  scale_y_continuous(breaks = seq(0, 12, 4)) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  scale_fill_continuous(low = 'skyblue', high = 'blue', name = 'Mean ABV')
+```
+## IBU
+```{r}
+# box plots for all states
+beer_brewery_merged_mean %>%
+  group_by(State) %>%
+  mutate(mean_ibu = mean(IBU, na.rm = T)) %>%
+ggplot(aes(x = reorder(State, -mean_ibu), y = ABV, fill = mean_ibu)) + 
+  geom_boxplot() + 
+  labs(x = 'State', y = 'Beer IBU', title = 'IBU percentages by State') + 
+  scale_y_continuous(breaks = seq(0, 12, 4)) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  scale_fill_continuous(low = 'skyblue', high = 'blue', name = 'Mean IBU')
+
+
+
+# box plots for all states
+beer_brewery_merged_dropped_nan %>%
+  group_by(State) %>%
+  mutate(mean_abv = mean(ABV, na.rm = T)) %>%
+ggplot(aes(x = reorder(State, -mean_abv), y = ABV, fill = mean_abv)) + 
+  geom_boxplot() + 
+  labs(x = 'State', y = 'Beer ABV', title = 'ABV percentages by State') + 
+  scale_y_continuous(breaks = seq(0, 12, 4)) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  scale_fill_continuous(low = 'skyblue', high = 'blue', name = 'Mean ABV')
+
+
+```
+
+
+# jitter plot
+```{r}
+
+ggplot(beer_brewery_merged_dropped_nan, 
+                aes(x = factor(Ounces), 
+                    y = ABV,
+                    col = IBU)) + 
+  geom_jitter() + 
+  labs(x = "Ounces", 
+       y = "ABV", 
+       title = "ABV by Ounces") +
+  scale_color_gradient(low = "sky blue", 
+                       high = "dark blue")
+
+
+
+```
+
+
+```{r}
+ggplot(beer_brewery_merged_dropped_nan, 
+                aes(x = factor(Ounces), 
+                    y = IBU,
+                    color = ABV)) + 
+  geom_jitter() + 
+  labs(x = "Ounces", 
+       y = "IBU", 
+       title = "IBU by Ounces") +
+  scale_color_gradient(low = "sky blue", 
+                       high = "dark blue")
+
+```
+
+
+
+
+
+
+# table for unique breweries and the mean abv ibu for each state
+
+```{r}
+install.packages("kableExtra")
+library(kableExtra)
+
+
+kable(beer_brewery_merged_dropped_nan %>% 
+  group_by(State) %>% 
+  summarise(n_unique = n_distinct(Name.y), 
+  mean_abv = mean(ABV), mean_ibu = mean(IBU)) %>% 
+  arrange(desc(n_unique)))
+
+
+
+```
+
+```{r}
+ggplotly(beer_brewery_merged_dropped_nan %>% 
+  group_by(State) %>% 
+  summarise(n_unique = n_distinct(Name.y)) %>% 
+  ggplot(aes(x = reorder(State, desc(n_unique)), y = n_unique)) + 
+  geom_bar(stat="identity") + 
+  theme_bw() + 
+  labs(x = "State",y = "Unique Breweries", 
+  title = "Number of Unique Breweries per State") +
+    theme(axis.text.x = element_text(size=5, angle = 90)))
+```
+
+
+
+
+```{r}
+
+# unique style of beers for each state
+beer_brewery_merged_dropped_nan %>% 
+  group_by(State) %>% 
+  summarise(n_unique = n_distinct(Style)) %>% 
+  arrange(desc(n_unique))
+
+```
+
+
+
+```{r}
+
+ggplotly(beer_brewery_merged_dropped_nan %>% 
+  group_by(State) %>% 
+  summarise(n_unique = n_distinct(Style)) %>% 
+  ggplot(aes(x = reorder(State, desc(n_unique)), y = n_unique)) + 
+  geom_bar(stat="identity") + 
+  theme_bw() + 
+  labs(x = "State", y = "Unique Styles", 
+  title = "Number of Unique Styles per State"))
+
+
+```
+
+```{r}
+# table of mean stuff for each style
+
+kable(beer_brewery_merged_dropped_nan %>% 
+  group_by(Style) %>% 
+  summarise(n = n(), mean_abv = mean(ABV), 
+  mean_ibu = mean(IBU), mean_oz = mean(Ounces)) %>% 
+  arrange(desc(n)))
+
+
+
+```
+
+
+
+
+
+
+
