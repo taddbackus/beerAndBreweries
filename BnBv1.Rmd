@@ -235,6 +235,11 @@ cor(impute_IBU_info$ABV, impute_IBU_info$IBU)
 ```
 
 # Question 8
+## IPA vs other Ales
+aleIPAdf <- filter(impute_IBU_info, beerCat=='IPA' | beerCat=='Ale')
+summary(aleIPAdf)
+ggplot(aleIPAdf, aes(x=ABV,y=IBU,color=beerCat))+
+  geom_point()
 
 # Question 9
 
