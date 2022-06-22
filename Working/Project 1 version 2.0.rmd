@@ -100,6 +100,21 @@ map.df <- merge(states,
                 all.x = T)
 map.df <- map.df[order(map.df$order),]
 ```
+Below is the table that shows the number of breweries in each state:
+
+AK  AL  AR  AZ  CA  CO  CT  DC  DE  FL  GA  HI 
+  7   3   2  11  39  47   8   1   2  15   7   4 
+ IA  ID  IL  IN  KS  KY  LA  MA  MD  ME  MI  MN 
+  5   5  18  22   3   4   5  23   7   9  32  12 
+ MO  MS  MT  NC  ND  NE  NH  NJ  NM  NV  NY  OH 
+  9   2   9  19   1   5   3   3   4   2  16  15 
+ OK  OR  PA  RI  SC  SD  TN  TX  UT  VA  VT  WA 
+  6  29  25   5   4   1   3  28   4  16  10  23 
+ WI  WV  WY 
+ 20   1   4 
+
+
+
 
 ```{r, echo=FALSE}
 # Plot the USA heatmap for breweries in each state
@@ -420,6 +435,7 @@ impute_IBU_info <- rename(impute_IBU_info, 'Brewery Name' = 'Name.y')
 max_ABV <- impute_IBU_info %>% slice(which.max(impute_IBU_info$ABV))
 
 ```
+The max ABV is found in Lee Hill Series Vol. 5 - Belgian Style Quadrupel Ale, which has an ABV of .128
 
 ## Max IBU
 We extract the observation with the highest IBU and put it in a dataframe.
@@ -428,7 +444,7 @@ We extract the observation with the highest IBU and put it in a dataframe.
 max_IBU <- impute_IBU_info %>% slice(which.max(impute_IBU_info$IBU))
 
 ```
-
+The max IBU is found in Bitter Bitch Imperial IPA, with an IBU of 138.
 
 
 # Question 6
@@ -455,7 +471,9 @@ ggplot(impute_IBU_info,
   ggtitle('ABV Distribution')
 
 ```
-
+We can see basic summary statistics in the table below:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.00100 0.05000 0.05600 0.05976 0.06700 0.12800
 
 
 # Question 7
@@ -475,7 +493,7 @@ ggplot(impute_IBU_info,
 
 cor(impute_IBU_info$ABV, impute_IBU_info$IBU)
 ```
-
+The correlation coefficient is 0.7222. This suggests that the average unit of IBU will increase by 0.7222 units for every one unit of increase in ABV. 
 
 
 # Question 8
