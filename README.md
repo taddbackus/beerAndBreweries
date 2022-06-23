@@ -6,6 +6,17 @@ and Washington D.C. about 558 US Breweries and 2410 US craft beers. We will anal
 bitterness and alcohol content by state, as well as, the relationship between the bitterness 
 and alcohol content.
 
+The steps and procedures taken for this analysis are detailed in the RMD file, as well as an 
+HTML file that shows the same information in a cleaner format. We 
+start by looking at basic summary statistics, visual graphics, and at the 
+statistical differences between ABV (alcohol by volume) and IBU (International 
+Bitterness Units). We also looked at the differences between IPAs and other 
+types of Ales. 
+
+The initial data provided were in two separate datasets, one for beers and one 
+for breweries (detailed bleow), which were later combined into a single dataset.
+
+
 ## Data
 ### Beer: [Beer.csv](https://github.com/tadbackus/beerAndBreweries/blob/main/Data/Beer.csv)
 Name: Name of the beer  
