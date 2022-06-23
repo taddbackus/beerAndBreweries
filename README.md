@@ -19,6 +19,7 @@ for breweries (detailed bleow), which were later combined into a single dataset.
 
 ## Data
 ### Beer: [Beer.csv](https://github.com/tadbackus/beerAndBreweries/blob/main/Data/Beer.csv)
+![image](https://github.com/tadbackus/beerAndBreweries/blob/main/Pictures/Beer%20Data.PNG)
 Name: Name of the beer  
 Beer_ID: Unique identifier of the beer  
 ABV: Alcohol by volume of the beer  
