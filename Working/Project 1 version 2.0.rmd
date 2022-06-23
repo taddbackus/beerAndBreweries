@@ -516,3 +516,76 @@ ggplot(aleIPAdf,
 ```
 
 # Question 9
+## kNN Classifier
+```{r, echo=FALSE}
+iterations = 500
+numks = 30
+splitPerc = .70
+#kNN for many iterations and 30 Ks
+masterAcc = matrix(nrow=iterations, ncol=numks)
+masterSen = matrix(nrow=iterations, ncol=numks)
+masterSpec = matrix(nrow=iterations, ncol=numks)
+
+for(j in 1:iterations)
+{
+  trainIndices = sample(1:dim(aleIPAdf)[1],round(splitPerc * dim(aleIPAdf)[1]))
+  train = aleIPAdf[trainIndices,]
+  test = aleIPAdf[-trainIndices,]
+  for(i in 1:numks)
+  {
+    class = knn(train[,c(4,5)],test[,c(4,5)],train$beerCat,prob=TRUE,k=i)
+    CM = confusionMatrix(table(class, test$beerCat))
+    masterAcc[j,i] = CM$overall[1]
+    masterSen[j,i] = CM$byClass[1]
+    masterSpec[j,i] = CM$byClass[2]
+  }
+}
+meanAcc = colMeans(masterAcc)
+meanSen = colMeans(masterSen)
+meanSpec = colMeans(masterSpec)
+kResults = data.frame(k=seq(1,numks,1),acc=meanAcc,sen=meanSen,spec=meanSpec)
+
+sVal=50
+set.seed(sVal)
+k2Results = data.frame(accuracy=numeric(30),sensit=numeric(30),specif=numeric(30),k=numeric(30))
+trainInd2 = sample(1:dim(aleIPAdf)[1],round(splitPerc * dim(aleIPAdf)[1]))
+train2 = aleIPAdf[trainInd2,]
+test2 = aleIPAdf[-trainInd2,]
+for(i in 1:numks)
+{
+  class2 = knn(train2[,c(4,5)],test2[,c(4,5)],train2$beerCat,prob=TRUE,k=i)
+  CM2 = confusionMatrix(table(class2,test2$beerCat))
+  k2Results$accuracy[i] = CM2$overall[1]
+  k2Results$sensit[i] = CM2$byClass[1]
+  k2Results$specif[i] = CM2$byClass[2]
+  k2Results$k[i] = i
+}
+
+kMerge <- merge(kResults,k2Results,by='k')
+
+#single Knn
+set.seed(sVal)
+kVal = 10
+trainInd3 = sample(1:dim(aleIPAdf)[1],round(splitPerc * dim(aleIPAdf)[1]))
+train3 = aleIPAdf[trainInd3,]
+test3 = aleIPAdf[-trainInd3,]
+class3 = knn(train3[,c(4,5)],test3[,c(4,5)],train3$beerCat,prob=TRUE,k=kVal)
+CM3 = confusionMatrix(table(class3,test3$beerCat))
+yAcc = CM3$overall[1]
+ySen = CM3$byClass[1]
+ySpec = CM3$byClass[2]
+
+ggplot(kMerge, aes(x=k))+
+  geom_line(aes(y=acc),color='darkred')+
+  geom_line(aes(y=accuracy),color='darkred',linetype='twodash')+
+  geom_line(aes(y=sen),color='steelblue')+
+  geom_line(aes(y=sensit),color='steelblue',linetype='twodash')+
+  geom_line(aes(y=spec),color='forestgreen')+
+  geom_line(aes(y=specif),color='forestgreen',linetype='twodash')+
+  geom_point(aes(x=kVal,y=yAcc),color='darkred',size=3)+
+  geom_point(aes(x=kVal,y=ySen),color='steelblue',size=3)+
+  geom_point(aes(x=kVal,y=ySpec),color='forestgreen',size=3)+
+  ggtitle('Results from kNN classifier')+
+  xlab('Number of nearest neighbors')+
+  ylab('Percent')
+```
