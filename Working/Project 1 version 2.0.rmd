@@ -59,8 +59,10 @@ theme_set(theme_minimal())
 We will read in the beer and brewery data provided
 ```{r, echo=FALSE}
 # Read in the data
-beer <- read.csv(file.choose(), header = TRUE)
-brewery <- read.csv(file.choose(), header = TRUE)
+#beer <- read.csv(file.choose(), header = TRUE)
+#brewery <- read.csv(file.choose(), header = TRUE)
+beer <- read.csv("/Users/taddbackus/School/summer22/doingDataScience/Unit8/Beers.txt", header=TRUE)
+brewery <- read.csv("/Users/taddbackus/School/summer22/doingDataScience/Unit8/Breweries.txt", header=TRUE)
 ```
 The beer dataset has 2,410 observations and seven columns. The brewery dataset 
 has 558 observations four columns. 
@@ -588,4 +590,37 @@ ggplot(kMerge, aes(x=k))+
   ggtitle('Results from kNN classifier')+
   xlab('Number of nearest neighbors')+
   ylab('Percent')
+```
+
+# Extra Analysis
+## Most popular beer types in each state
+```{r, echo=FALSE}
+#impute_IBU_info$State = factor(impute_IBU_info$State)
+countBeerTypes <- count(impute_IBU_info, State, beerCat, name='Freq')
+ggplot(countBeerTypes, aes(x=State,y=Freq,fill=beerCat),color='black')+
+  geom_bar(stat='identity')+
+  scale_x_discrete(guide=guide_axis(angle=90))+
+  ggtitle('Types of beer in each state')+
+  xlab('State')+
+  ylab('Number of beers')
+maxBeerTypes <- aggregate(.~State, countBeerTypes, FUN=max)
+maxBeerTypes = merge(maxBeerTypes, countBeerTypes, by=c('State','Freq'))
+maxBeerTypes <- rename(maxBeerTypes, Style=beerCat.y)
+maxBeerTypes <- maxBeerTypes[c('State','Freq','Style')]
+maxBeerMap = maxBeerTypes
+maxBeerMap <- rename(maxBeerMap, abb=State)
+maxBeerMap$abb = trimws(maxBeerMap$abb)
+maxBeerMap$Frew = factor(maxBeerMap$Freq)
+stateBeerMap = merge(maxBeerMap, lookup, by='abb', all=TRUE)
+stateBeerMap$region <-tolower(maxBeerMap$State)
+stateBeerMap = stateBeerMap[-1]
+states <- map_data('state')
+map4.df <- merge(states, stateBeerMap, by='region', all.x=T)
+map.df <- map4.df[order(map4.df$order),]
+ggplot(map4.df, aes(x=long, y=lat, group=group))+
+  geom_polygon(aes(fill=Style))+
+  scale_fill_discrete()+
+  geom_path()+
+  theme_void()+
+  ggtitle('Most common beer style in each state')
 ```
